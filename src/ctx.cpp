@@ -455,8 +455,12 @@ fail_cleanup_slots:
     return false;
 }
 
-zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
+zmq::socket_base_t *zmq::ctx_t::create_socket (int type_, std::function<zmq::socket_base_t*(int type_, zmq::ctx_t *parent_, uint32_t tid_, int sid_)> sktAllocFn)
 {
+  if(!sktAllocFn)
+  {
+    sktAllocFn = [](int type_, zmq::ctx_t *parent_, uint32_t tid_, int sid_){return socket_base_t::create (type_, parent_, tid_, sid_);};
+  }
     scoped_lock_t locker (_slot_sync);
 
     //  Once zmq_ctx_term() or zmq_ctx_shutdown() was called, we can't create
@@ -485,7 +489,7 @@ zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
     const int sid = (static_cast<int> (max_socket_id.add (1))) + 1;
 
     //  Create the socket and register its mailbox.
-    socket_base_t *s = socket_base_t::create (type_, this, slot, sid);
+    socket_base_t *s = sktAllocFn(type_, this, slot, sid);
     if (!s) {
         _empty_slots.push_back (slot);
         return NULL;
@@ -494,6 +498,14 @@ zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
     _slots[slot] = s->get_mailbox ();
 
     return s;
+}
+
+zmq::socket_base_t *zmq::ctx_t::create_router_socket (zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_)
+{
+  return create_socket(0, [cnfn_, cnfnhint_](int, zmq::ctx_t *parent_, uint32_t tid_, int sid_)
+  {
+    return socket_base_t::create_router( parent_, tid_, sid_, cnfn_, cnfnhint_);
+  });
 }
 
 void zmq::ctx_t::destroy_socket (class socket_base_t *socket_)

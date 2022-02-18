@@ -21,7 +21,7 @@ class pipe_t;
 class router_t : public routing_socket_base_t
 {
   public:
-    router_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);
+    router_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
     ~router_t () ZMQ_OVERRIDE;
 
     //  Overrides of functions from socket_base_t.

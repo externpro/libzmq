@@ -445,6 +445,9 @@ ZMQ_EXPORT const char *zmq_msg_gets (const zmq_msg_t *msg_,
 #define ZMQ_PROTOCOL_ERROR_WS_UNSPECIFIED 0x30000000
 
 ZMQ_EXPORT void *zmq_socket (void *, int type_);
+typedef void(zmq_router_skt_peer_connect_notification_fn) (const unsigned char* rmtID_, size_t rmtIDLen_, int connectingElseDisconnecting_, void *hint_);
+ZMQ_EXPORT void *zmq_new_router_socket (void * context_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
+
 ZMQ_EXPORT int zmq_close (void *s_);
 ZMQ_EXPORT int
 zmq_setsockopt (void *s_, int option_, const void *optval_, size_t optvallen_);

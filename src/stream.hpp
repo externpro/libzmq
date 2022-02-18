@@ -15,7 +15,7 @@ class pipe_t;
 class stream_t ZMQ_FINAL : public routing_socket_base_t
 {
   public:
-    stream_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);
+    stream_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
     ~stream_t ();
 
     //  Overrides of functions from socket_base_t.

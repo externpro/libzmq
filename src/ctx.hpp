@@ -3,6 +3,7 @@
 #ifndef __ZMQ_CTX_HPP_INCLUDED__
 #define __ZMQ_CTX_HPP_INCLUDED__
 
+#include <functional>
 #include <map>
 #include <vector>
 #include <string>
@@ -93,7 +94,9 @@ class ctx_t ZMQ_FINAL : public thread_ctx_t
     int get (int option_);
 
     //  Create and destroy a socket.
-    zmq::socket_base_t *create_socket (int type_);
+    // if sktAllocFn is empty then it will allocate it using socket_base_t::create(...)
+    zmq::socket_base_t *create_socket (int type_, std::function<zmq::socket_base_t*(int type_, zmq::ctx_t *parent_, uint32_t tid_, int sid_)> sktAllocFn = {});
+    zmq::socket_base_t *create_router_socket (zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
     void destroy_socket (zmq::socket_base_t *socket_);
 
     //  Send command to the destination thread.

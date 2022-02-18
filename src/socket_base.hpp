@@ -45,6 +45,8 @@ class socket_base_t : public own_t,
     //  Create a socket of a specified type.
     static socket_base_t *
     create (int type_, zmq::ctx_t *parent_, uint32_t tid_, int sid_);
+    static socket_base_t *
+    create_router (zmq::ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
 
     //  Returns the mailbox associated with this socket.
     i_mailbox *get_mailbox () const;
@@ -333,7 +335,7 @@ class socket_base_t : public own_t,
 class routing_socket_base_t : public socket_base_t
 {
   protected:
-    routing_socket_base_t (class ctx_t *parent_, uint32_t tid_, int sid_);
+    routing_socket_base_t (class ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
     ~routing_socket_base_t () ZMQ_OVERRIDE;
 
     // methods from socket_base_t
@@ -374,6 +376,10 @@ class routing_socket_base_t : public socket_base_t
     //  Outbound pipes indexed by the peer IDs.
     typedef std::map<blob_t, out_pipe_t> out_pipes_t;
     out_pipes_t _out_pipes;
+
+    // peer connection-notification function
+    zmq_router_skt_peer_connect_notification_fn *_cnfn;
+    void *_cnfnhint;
 
     // Next assigned name on a zmq_connect() call used by ROUTER and STREAM socket types
     std::string _connect_routing_id;

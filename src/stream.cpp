@@ -9,8 +9,8 @@
 #include "likely.hpp"
 #include "err.hpp"
 
-zmq::stream_t::stream_t (class ctx_t *parent_, uint32_t tid_, int sid_) :
-    routing_socket_base_t (parent_, tid_, sid_),
+zmq::stream_t::stream_t (class ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_) :
+    routing_socket_base_t (parent_, tid_, sid_, cnfn_, cnfnhint_),
     _prefetched (false),
     _routing_id_sent (false),
     _current_out (NULL),
