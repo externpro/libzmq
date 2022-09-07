@@ -780,6 +780,11 @@ ZMQ_EXPORT int zmq_ppoll (zmq_pollitem_t *items_,
 
 #endif // ZMQ_BUILD_DRAFT_API
 
+// expose socket option ZMQ_METADATA, which is currently only available in the
+// draft API:
+#ifndef ZMQ_METADATA
+#define ZMQ_METADATA 95
+#endif
 
 #undef ZMQ_EXPORT
 
