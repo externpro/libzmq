@@ -487,7 +487,9 @@ void zmq::curve_server_t::send_zap_request (const uint8_t *key_,
     }
     else
     {
-        uint8_t* credentials[2] = { key_, signature_.data() };
+        const uint8_t* credentials[2] = { key_,
+          static_cast<const uint8_t*>(
+            static_cast<const void*>(signature_.data())) };
         size_t credentialSizes[2] = { crypto_box_PUBLICKEYBYTES,
                                       signature_.size() };
         zap_client_t::send_zap_request ("CURVE", 5, credentials,
@@ -499,7 +501,7 @@ int zmq::curve_server_t::property (const std::string &name_, const void *value_,
                                    size_t length_)
 {
     if (name_ == "X-ClientKeySignature" && value_ && length_)
-        _signature.assign(value_, length_);
+        _signature.assign(static_cast<const char*>(value_), length_);
     return 0; // success
 }
 
