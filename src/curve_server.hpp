@@ -47,7 +47,7 @@ class curve_server_t ZMQ_FINAL : public zap_client_common_handshake_t,
     //  Key used to produce cookie
     uint8_t _cookie_key[crypto_secretbox_KEYBYTES];
 
-    //  Signature for client's public key, if provided
+    //  Signature for client's public key, empty() if not provided
     std::string _signature;
 
     int process_hello (msg_t *msg_);
