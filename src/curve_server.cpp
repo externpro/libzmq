@@ -410,13 +410,19 @@ int zmq::curve_server_t::process_initiate (msg_t *msg_)
                               _cn_secret);
     zmq_assert (rc == 0);
 
+    // parse the metadata BEFORE doing ZAP authentication so that ZAP can use
+    // any applicable metadata:
+    auto retMetadata = parse_metadata (
+      &initiate_plaintext[crypto_box_ZEROBYTES + 128],
+      clen - crypto_box_ZEROBYTES - 128);
+
     //  Given this is a backward-incompatible change, it's behind a socket
     //  option disabled by default.
     if (zap_required () || !options.zap_enforce_domain) {
         //  Use ZAP protocol (RFC 27) to authenticate the user.
         rc = session->zap_connect ();
         if (rc == 0) {
-            send_zap_request (client_key);
+            send_zap_request (client_key, _signature);
             state = waiting_for_zap_reply;
 
             //  TODO actually, it is quite unlikely that we can read the ZAP
@@ -439,8 +445,7 @@ int zmq::curve_server_t::process_initiate (msg_t *msg_)
         state = sending_ready;
     }
 
-    return parse_metadata (&initiate_plaintext[crypto_box_ZEROBYTES + 128],
-                           clen - crypto_box_ZEROBYTES - 128);
+    return retMetadata;
 }
 
 int zmq::curve_server_t::produce_ready (msg_t *msg_)
@@ -497,10 +502,34 @@ int zmq::curve_server_t::produce_error (msg_t *msg_) const
     return 0;
 }
 
-void zmq::curve_server_t::send_zap_request (const uint8_t *key_)
+void zmq::curve_server_t::send_zap_request (const uint8_t *key_,
+                                            const std::string& signature_)
 {
-    zap_client_t::send_zap_request ("CURVE", 5, key_,
-                                    crypto_box_PUBLICKEYBYTES);
+    // send not only the key but also an optional signature for the key, if one
+    // was present in the metadata:
+    if (signature_.empty())
+    {
+        zap_client_t::send_zap_request ("CURVE", 5, key_,
+                                        crypto_box_PUBLICKEYBYTES);
+    }
+    else
+    {
+        const uint8_t* credentials[2] = { key_,
+          static_cast<const uint8_t*>(
+            static_cast<const void*>(signature_.data())) };
+        size_t credentialSizes[2] = { crypto_box_PUBLICKEYBYTES,
+                                      signature_.size() };
+        zap_client_t::send_zap_request ("CURVE", 5, credentials,
+                                        credentialSizes, 2);
+    }
+}
+
+int zmq::curve_server_t::property (const std::string &name_, const void *value_,
+                                   size_t length_)
+{
+    if (name_ == "X-ClientKeySignature" && value_ && length_)
+        _signature.assign(static_cast<const char*>(value_), length_);
+    return 0; // success
 }
 
 #endif

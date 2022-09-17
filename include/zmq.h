@@ -781,6 +781,11 @@ ZMQ_EXPORT int zmq_socket_monitor_pipes_stats (void *s);
 
 #endif // ZMQ_BUILD_DRAFT_API
 
+// expose socket option ZMQ_METADATA, which is currently only available in the
+// draft API:
+#ifndef ZMQ_METADATA
+#define ZMQ_METADATA 95
+#endif
 
 #undef ZMQ_EXPORT
 
