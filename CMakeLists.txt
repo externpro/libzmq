@@ -1,5 +1,5 @@
 # CMake build script for ZeroMQ
-cmake_minimum_required(VERSION 3.0.2...3.21)
+cmake_minimum_required(VERSION 3.0.2...3.31)
 project(ZeroMQ)
 
 include(CheckIncludeFiles)
@@ -15,7 +15,7 @@ include(FindThreads)
 include(GNUInstallDirs)
 include(CheckTypeSize)
 include(CMakePackageConfigHelpers)
-include(flags OPTIONAL)
+include(xpflags)
 
 list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}")
 set(ZMQ_CMAKE_MODULES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/builds/cmake/Modules)
