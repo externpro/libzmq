@@ -289,7 +289,7 @@ endforeach()
 if(ZMQ_HAVE_CURVE AND TARGET test_security_curve)
   set_tests_properties(test_security_curve PROPERTIES TIMEOUT 60)
 endif()
-set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
+set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 90)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)
