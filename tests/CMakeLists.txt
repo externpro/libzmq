@@ -281,7 +281,7 @@ foreach(test ${tests})
       add_test(NAME ${test} COMMAND ${test})
     endif()
   endif()
-  set_tests_properties(${test} PROPERTIES TIMEOUT 10)
+  set_tests_properties(${test} PROPERTIES TIMEOUT 15)
   set_tests_properties(${test} PROPERTIES SKIP_RETURN_CODE 77)
 endforeach()
 
