@@ -1,5 +1,6 @@
 # CMake build script for ZeroMQ
 cmake_minimum_required(VERSION 3.0.2...3.31)
+set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES .devcontainer/cmake/xproinc.cmake)
 project(ZeroMQ)
 
 include(CheckIncludeFiles)
@@ -259,7 +260,7 @@ option(ENABLE_CURVE "Enable CURVE security" ON)
 if(ENABLE_CURVE)
   if(WITH_LIBSODIUM)
     if(COMMAND xpFindPkg)
-      xpFindPkg(PKGS sodium)
+      xpFindPkg(PKGS libsodium)
       message(STATUS "Using libsodium for CURVE security")
       get_target_property(SODIUM_INCLUDE_DIRS xpro::sodium INTERFACE_INCLUDE_DIRECTORIES)
       get_target_property(SODIUM_DEFS xpro::sodium INTERFACE_COMPILE_DEFINITIONS)
@@ -267,22 +268,24 @@ if(ENABLE_CURVE)
       add_compile_definitions(${SODIUM_DEFS})
       set(ZMQ_USE_LIBSODIUM 1)
       set(ZMQ_HAVE_CURVE 1)
+      set(SODIUM_FOUND TRUE)
+      set(SODIUM_LIBRARIES ${LIBSODIUM_LIBRARIES})
     else()
-      find_package("Sodium")
-      if(SODIUM_FOUND)
-        message(STATUS "Using libsodium for CURVE security")
-        include_directories(${SODIUM_INCLUDE_DIRS})
-        if(WITH_LIBSODIUM_STATIC)
-          add_compile_definitions(SODIUM_STATIC)
-        endif()
-        set(ZMQ_USE_LIBSODIUM 1)
-        set(ZMQ_HAVE_CURVE 1)
-      else()
-        message(
-          WARNING
-            "libsodium not installed, instead using builtin tweetnacl, you may want to install libsodium and run cmake again"
-        )
+    find_package("Sodium")
+    if(SODIUM_FOUND)
+      message(STATUS "Using libsodium for CURVE security")
+      include_directories(${SODIUM_INCLUDE_DIRS})
+      if(WITH_LIBSODIUM_STATIC)
+        add_compile_definitions(SODIUM_STATIC)
       endif()
+      set(ZMQ_USE_LIBSODIUM 1)
+      set(ZMQ_HAVE_CURVE 1)
+    else()
+      message(
+        WARNING
+          "libsodium not installed, instead using builtin tweetnacl, you may want to install libsodium and run cmake again"
+      )
+    endif()
     endif()
   endif()
   if(NOT ZMQ_HAVE_CURVE)
@@ -1231,13 +1234,19 @@ set(VERSION ${ZMQ_VERSION_MAJOR}.${ZMQ_VERSION_MINOR}.${ZMQ_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/libzmq.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc @ONLY)
 set(zmq-pkgconfig ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc)
 
+set(targetsFile ${PROJECT_NAME}Targets)
+function(callPackageDevel)
+  set(CMAKE_PROJECT_NAME libzmq)
+  xpPackageDevel(TARGETS_FILE ${targetsFile} DEPS sodium LIBRARIES ${nSpace}libzmq-static)
+endfunction()
 if(DEFINED XP_NAMESPACE)
   set(nSpace ${XP_NAMESPACE}::)
   set(nameSpace NAMESPACE ${nSpace})
   set(XP_OPT_INSTALL EXCLUDE_FROM_ALL)
-endif()
-if(DEFINED XP_INSTALL_CMAKEDIR)
+  set(XP_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake)
   set(ZEROMQ_CMAKECONFIG_INSTALL_DIR ${XP_INSTALL_CMAKEDIR} CACHE STRING "install path for ZeroMQConfig.cmake")
+  callPackageDevel()
+  set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME devel)
 endif()
 
 if(NOT ZMQ_BUILD_FRAMEWORK)
@@ -1694,7 +1703,7 @@ else()
 endif()
 
 if((NOT CMAKE_VERSION VERSION_LESS 3.0) AND (BUILD_SHARED OR BUILD_STATIC))
-  export(EXPORT ${PROJECT_NAME}-targets FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")
+  export(EXPORT ${PROJECT_NAME}-targets FILE "${CMAKE_CURRENT_BINARY_DIR}/${targetsFile}.cmake")
 endif()
 configure_package_config_file(
   builds/cmake/${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
@@ -1706,7 +1715,7 @@ write_basic_package_version_file(
 if(BUILD_SHARED OR BUILD_STATIC)
   install(
     EXPORT ${PROJECT_NAME}-targets
-    FILE ${PROJECT_NAME}Targets.cmake ${nameSpace}
+    FILE ${targetsFile}.cmake ${nameSpace}
     DESTINATION ${ZEROMQ_CMAKECONFIG_INSTALL_DIR})
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
                 ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake

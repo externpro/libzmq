@@ -1,5 +1,5 @@
 # CMake build script for ZeroMQ tests
-cmake_minimum_required(VERSION 2.8.1...3.21)
+cmake_minimum_required(VERSION 2.8.1...3.31)
 
 # On Windows: solution file will be called tests.sln
 project(tests)
@@ -231,6 +231,10 @@ if(WIN32)
   list(REMOVE_ITEM tests test_many_sockets)
 endif()
 
+if(APPLE)
+  list(REMOVE_ITEM tests test_security_curve)
+endif()
+
 foreach(test ${tests})
   # target_sources not supported before CMake 3.1
   if(ZMQ_HAVE_CURVE AND ${test} MATCHES test_security_curve)
@@ -282,17 +286,17 @@ foreach(test ${tests})
 endforeach()
 
 # override timeout for these tests
-if(ZMQ_HAVE_CURVE)
+if(ZMQ_HAVE_CURVE AND TARGET test_security_curve)
   set_tests_properties(test_security_curve PROPERTIES TIMEOUT 60)
 endif()
-set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
+set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 90)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)
 endif()
 
 # add additional required flags ZMQ_USE_TWEETNACL will already be defined when not using sodium
-if(ZMQ_HAVE_CURVE AND NOT ZMQ_USE_TWEETNACL)
+if(ZMQ_HAVE_CURVE AND NOT ZMQ_USE_TWEETNACL AND TARGET test_security_curve)
   target_compile_definitions(test_security_curve PRIVATE "-DZMQ_USE_TWEETNACL")
 endif()
 

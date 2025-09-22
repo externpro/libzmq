@@ -125,3 +125,7 @@ zeromq-*.tar.gz
 zeromq-*.zip
 core
 
+# externpro
+.env
+_bld*/
+docker-compose.override.yml
