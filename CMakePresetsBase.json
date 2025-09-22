@@ -4,7 +4,13 @@
     {
       "name": "config-base",
       "hidden": true,
-      "binaryDir": "${sourceDir}/_bld-${presetName}"
+      "binaryDir": "${sourceDir}/_bld-${presetName}",
+      "cacheVariables": {
+        "WITH_TLS": "OFF",
+        "BUILD_SHARED": "OFF",
+        "ENABLE_CPACK": "OFF",
+        "XP_NAMESPACE": "xpro"
+      }
     }
   ]
 }
