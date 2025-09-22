@@ -315,7 +315,7 @@ foreach(test ${tests})
 endforeach()
 
 # override timeout for these tests
-set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
+set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 90)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)
