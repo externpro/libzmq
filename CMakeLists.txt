@@ -1,5 +1,6 @@
 # CMake build script for ZeroMQ
 cmake_minimum_required(VERSION 3.0.2...3.31)
+set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES .devcontainer/cmake/xproinc.cmake)
 project(ZeroMQ)
 
 include(CheckIncludeFiles)
