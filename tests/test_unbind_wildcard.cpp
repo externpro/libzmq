@@ -39,12 +39,11 @@ void test_address_wildcard_ipv4 ()
       zmq_getsockopt (sb, ZMQ_LAST_ENDPOINT, bind_endpoint, &endpoint_len));
 
     //  Apparently Windows can't connect to 0.0.0.0. A better fix would be welcome.
-#ifdef ZMQ_HAVE_WINDOWS
-    sprintf (connect_endpoint, "tcp://127.0.0.1:%s",
-             strrchr (bind_endpoint, ':') + 1);
-#else
-    strcpy (connect_endpoint, bind_endpoint);
-#endif
+    if (strstr (bind_endpoint, "tcp://0.0.0.0:") == bind_endpoint)
+        sprintf (connect_endpoint, "tcp://127.0.0.1:%s",
+                 strrchr (bind_endpoint, ':') + 1);
+    else
+        strcpy (connect_endpoint, bind_endpoint);
 
     TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (sc, connect_endpoint));
 
@@ -87,7 +86,14 @@ void test_address_wildcard_ipv6 ()
         sprintf (connect_endpoint, "tcp://127.0.0.1:%s",
                  strrchr (bind_endpoint, ':') + 1);
 #else
-    strcpy (connect_endpoint, bind_endpoint);
+    if (ipv6 && strstr (bind_endpoint, "tcp://[::]:") == bind_endpoint)
+        sprintf (connect_endpoint, "tcp://[::1]:%s",
+                 strrchr (bind_endpoint, ':') + 1);
+    else if (!ipv6 && strstr (bind_endpoint, "tcp://0.0.0.0:") == bind_endpoint)
+        sprintf (connect_endpoint, "tcp://127.0.0.1:%s",
+                 strrchr (bind_endpoint, ':') + 1);
+    else
+        strcpy (connect_endpoint, bind_endpoint);
 #endif
 
     TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (sc, connect_endpoint));

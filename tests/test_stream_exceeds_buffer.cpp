@@ -46,10 +46,16 @@ void test_stream_exceeds_buffer ()
     void *zsock = test_context_socket (ZMQ_STREAM);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (zsock, my_endpoint));
 
+    const int rcvtimeo = 5000;
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_setsockopt (zsock, ZMQ_RCVTIMEO, &rcvtimeo, sizeof (rcvtimeo)));
+
     int client_sock =
       TEST_ASSERT_SUCCESS_RAW_ERRNO (accept (server_sock, NULL, NULL));
 
     TEST_ASSERT_SUCCESS_RAW_ERRNO (close (server_sock));
+
+    msleep (SETTLE_TIME);
 
     TEST_ASSERT_EQUAL_INT (msgsize, send (client_sock, sndbuf, msgsize, 0));
 
