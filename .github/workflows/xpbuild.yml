@@ -16,6 +16,8 @@ jobs:
       packages: write
     uses: externpro/externpro/.github/workflows/build-linux.yml@main
     secrets: inherit
+    with:
+      enable-tmate: true
   macos:
     uses: externpro/externpro/.github/workflows/build-macos.yml@main
     secrets: inherit
