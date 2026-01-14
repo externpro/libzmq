@@ -1234,24 +1234,21 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/libzmq.pc.in ${CMAKE_CURRENT_BINA
 set(zmq-pkgconfig ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc)
 
 set(targetsFile ${PROJECT_NAME}Targets)
-function(callPackageDevel)
-  set(CMAKE_PROJECT_NAME libzmq)
-  xpPackageDevel(TARGETS_FILE ${targetsFile} DEPS libsodium LIBRARIES ${nSpace}libzmq-static)
-endfunction()
 if(DEFINED XP_NAMESPACE)
+  xpExternPackage(REPO_NAME libzmq NAMESPACE ${XP_NAMESPACE}
+    TARGETS_FILE ${targetsFile} LIBRARIES libzmq-static
+    BASE v${VERSION} XPDIFF "patch" DEPS libsodium
+    WEB "https://zeromq.org/" UPSTREAM "github.com/zeromq/libzmq"
+    DESC "high-performance asynchronous messaging library"
+    LICENSE "[MPL-2.0](http://wiki.zeromq.org/area:licensing 'Mozilla Public License 2.0')"
+    )
   set(nSpace ${XP_NAMESPACE}::)
   set(nameSpace NAMESPACE ${nSpace})
-  set(XP_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR}/cmake)
   set(ZEROMQ_CMAKECONFIG_INSTALL_DIR ${XP_INSTALL_CMAKEDIR} CACHE STRING "install path for ZeroMQConfig.cmake")
-  callPackageDevel()
-  set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME devel)
-  set(ZEROMQ_COMPONENT "devel")
-else()
-  set(ZEROMQ_COMPONENT "SDK")
 endif()
 
 if(NOT ZMQ_BUILD_FRAMEWORK AND NOT DEFINED XP_NAMESPACE)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc DESTINATION ${CMAKE_INSTALL_DATADIR}/pkgconfig)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
 if(MSVC)
@@ -1643,18 +1640,18 @@ if(MSVC AND (BUILD_SHARED OR BUILD_STATIC))
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT ${ZEROMQ_COMPONENT})
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT SDK)
   if(MSVC_IDE)
     install(
       FILES ${PDB_OUTPUT_DIRECTORY}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}.pdb
       DESTINATION ${CMAKE_INSTALL_BINDIR}
-      COMPONENT ${ZEROMQ_COMPONENT}
+      COMPONENT SDK
       OPTIONAL)
   else()
     install(
       FILES ${PDB_OUTPUT_DIRECTORY}/${PDB_NAME}.pdb
       DESTINATION ${CMAKE_INSTALL_BINDIR}
-      COMPONENT ${ZEROMQ_COMPONENT}
+      COMPONENT SDK
       OPTIONAL)
   endif()
   if(BUILD_SHARED)
