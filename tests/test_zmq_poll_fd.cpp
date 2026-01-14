@@ -49,6 +49,7 @@ void test_poll_fd ()
       setsockopt (recv_socket, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof (int)));
 
     struct sockaddr_in saddr = bind_bsd_socket (recv_socket);
+    saddr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
 
     void *sb = test_context_socket (ZMQ_REP);
 
