@@ -40,13 +40,21 @@
 #endif
 
 #include <memory>
+#include <new>
+#include <type_traits>
 
 namespace zmq
 {
-#if defined(ZMQ_USE_LIBSODIUM)
 template <class T> struct secure_allocator_t
 {
-    typedef T value_type;
+    using value_type = T;
+    using pointer = T *;
+    using const_pointer = const T *;
+    using reference = T &;
+    using const_reference = const T &;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using is_always_equal = std::true_type;
 
     secure_allocator_t () ZMQ_DEFAULT;
 
@@ -56,20 +64,22 @@ template <class T> struct secure_allocator_t
     }
     T *allocate (std::size_t n) ZMQ_NOEXCEPT
     {
-        T *res = static_cast<T *> (sodium_allocarray (sizeof (T), n));
+ #if defined(ZMQ_USE_LIBSODIUM)
+        T *res = static_cast<T *> (sodium_allocarray (n, sizeof (T)));
         alloc_assert (res);
         return res;
+ #else
+        return static_cast<T *> (::operator new (n * sizeof (T)));
+ #endif
     }
-    void deallocate (T *p, std::size_t) ZMQ_NOEXCEPT { sodium_free (p); }
-
-    // the following is only required with C++98
-    // TODO maybe make this conditionally compiled
-    typedef T *pointer;
-    typedef const T *const_pointer;
-    typedef T &reference;
-    typedef const T &const_reference;
-    typedef std::size_t size_type;
-    typedef std::ptrdiff_t difference_type;
+    void deallocate (T *p, std::size_t) ZMQ_NOEXCEPT
+    {
+ #if defined(ZMQ_USE_LIBSODIUM)
+        sodium_free (p);
+ #else
+        ::operator delete (p);
+ #endif
+    }
     template <class U> struct rebind
     {
         typedef secure_allocator_t<U> other;
@@ -92,11 +102,6 @@ bool operator!= (const secure_allocator_t<T> &, const secure_allocator_t<U> &)
 {
     return false;
 }
-#else
-template <typename T> struct secure_allocator_t : std::allocator<T>
-{
-};
-#endif
 }
 
 #endif
