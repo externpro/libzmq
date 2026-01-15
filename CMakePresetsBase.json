@@ -12,5 +12,11 @@
         "XP_NAMESPACE": "xpro"
       }
     }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-base",
+      "hidden": true
+    }
   ]
 }

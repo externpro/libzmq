@@ -326,11 +326,20 @@ void socks_server_task (void *socks_server,
                      "socks_server: waiting for input (client fd: %d, remote "
                      "fd: %d)\n",
                      client, remote);
+            int idle_polls = 0;
             while (1) {
                 if (client == -1 || remote == -1)
                     break;
-                if (zmq_poll (items, 2, -1) < 0)
+                const int poll_rc = zmq_poll (items, 2, 1000);
+                if (poll_rc < 0)
                     break;
+                if (poll_rc == 0) {
+                    ++idle_polls;
+                    if (idle_polls >= 30)
+                        break;
+                    continue;
+                }
+                idle_polls = 0;
                 int nbytes;
                 for (int i = 0; i < 2; i++) {
                     if ((items[i].revents & ZMQ_POLLIN) == 0)
@@ -415,6 +424,11 @@ void *setup_push_server (char *connect_address, int connect_address_size)
     int res;
     const char *bind_address = "tcp://127.0.0.1:*";
     void *push = test_context_socket (ZMQ_PUSH);
+
+    const int sndtimeo = 5000;
+    res = zmq_setsockopt (push, ZMQ_SNDTIMEO, &sndtimeo, sizeof (sndtimeo));
+    TEST_ASSERT_SUCCESS_ERRNO (res);
+
     res = zmq_bind (push, bind_address);
     TEST_ASSERT_SUCCESS_ERRNO (res);
     size_t len = connect_address_size;
@@ -428,6 +442,11 @@ void *setup_pull_client (const char *connect_address, const char *socks_proxy)
 {
     int res;
     void *pull = test_context_socket (ZMQ_PULL);
+
+    const int rcvtimeo = 5000;
+    res = zmq_setsockopt (pull, ZMQ_RCVTIMEO, &rcvtimeo, sizeof (rcvtimeo));
+    TEST_ASSERT_SUCCESS_ERRNO (res);
+
     if (socks_proxy != NULL) {
         res = zmq_setsockopt (pull, ZMQ_SOCKS_PROXY, socks_proxy,
                               strlen (socks_proxy));
@@ -449,6 +468,10 @@ void *setup_pull_client_with_auth (const char *connect_address,
 {
     int res;
     void *pull = test_context_socket (ZMQ_PULL);
+
+    const int rcvtimeo = 5000;
+    res = zmq_setsockopt (pull, ZMQ_RCVTIMEO, &rcvtimeo, sizeof (rcvtimeo));
+    TEST_ASSERT_SUCCESS_ERRNO (res);
 
     if (socks_proxy != NULL) {
         res = zmq_setsockopt (pull, ZMQ_SOCKS_PROXY, socks_proxy,

@@ -77,12 +77,11 @@ void test_stream_disconnect ()
       zmq_getsockopt (sockets[SERVER], ZMQ_LAST_ENDPOINT, bind_endpoint, &len));
 
     //  Apparently Windows can't connect to 0.0.0.0. A better fix would be welcome.
-#ifdef ZMQ_HAVE_WINDOWS
-    sprintf (connect_endpoint, "tcp://127.0.0.1:%s",
-             strrchr (bind_endpoint, ':') + 1);
-#else
-    strcpy (connect_endpoint, bind_endpoint);
-#endif
+    if (strstr (bind_endpoint, "tcp://0.0.0.0:") == bind_endpoint)
+        sprintf (connect_endpoint, "tcp://127.0.0.1:%s",
+                 strrchr (bind_endpoint, ':') + 1);
+    else
+        strcpy (connect_endpoint, bind_endpoint);
 
     sockets[CLIENT] = test_context_socket (ZMQ_STREAM);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_setsockopt (
