@@ -32,6 +32,11 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <cstddef>
+
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+#include <malloc.h>
+#endif
 
 #include "err.hpp"
 #include "atomic_ptr.hpp"
@@ -80,16 +85,16 @@ template <typename T, int N> class yqueue_t
     {
         while (true) {
             if (_begin_chunk == _end_chunk) {
-                free (_begin_chunk);
+                deallocate_chunk (_begin_chunk);
                 break;
             }
             chunk_t *o = _begin_chunk;
             _begin_chunk = _begin_chunk->next;
-            free (o);
+            deallocate_chunk (o);
         }
 
         chunk_t *sc = _spare_chunk.xchg (NULL);
-        free (sc);
+        deallocate_chunk (sc);
     }
 
     //  Returns reference to the front element of the queue.
@@ -148,7 +153,7 @@ template <typename T, int N> class yqueue_t
         else {
             _end_pos = N - 1;
             _end_chunk = _end_chunk->prev;
-            free (_end_chunk->next);
+            deallocate_chunk (_end_chunk->next);
             _end_chunk->next = NULL;
         }
     }
@@ -166,7 +171,7 @@ template <typename T, int N> class yqueue_t
             //  so for cache reasons we'll get rid of the spare and
             //  use 'o' as the spare.
             chunk_t *cs = _spare_chunk.xchg (o);
-            free (cs);
+            deallocate_chunk (cs);
         }
     }
 
@@ -179,15 +184,53 @@ template <typename T, int N> class yqueue_t
         chunk_t *next;
     };
 
+    static inline void deallocate_chunk (chunk_t *chunk_)
+    {
+        if (!chunk_)
+            return;
+
+ #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+        _aligned_free (chunk_);
+ #else
+        free (chunk_);
+ #endif
+    }
+
     static inline chunk_t *allocate_chunk ()
     {
+        size_t alignment = alignof (chunk_t);
+
 #ifdef HAVE_POSIX_MEMALIGN
-        void *pv;
-        if (posix_memalign (&pv, ALIGN, sizeof (chunk_t)) == 0)
-            return (chunk_t *) pv;
+        if (alignment < ALIGN)
+            alignment = ALIGN;
+#endif
+
+        // malloc is only required to provide alignment suitable for
+        // std::max_align_t, which may be less than alignof(T).
+        // If chunk_t requires stronger alignment (e.g. command_t is 64-byte
+        // aligned), we must use an aligned allocation to avoid faults from
+        // aligned SIMD loads/stores.
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+        // Always pair _aligned_malloc with _aligned_free on Windows.
+        // Use aligned allocation even when the requested alignment is small.
+        if (alignment < alignof (std::max_align_t))
+            alignment = alignof (std::max_align_t);
+        return static_cast<chunk_t *> (
+          _aligned_malloc (sizeof (chunk_t), alignment));
+#else
+        if (alignment <= alignof (std::max_align_t))
+            return static_cast<chunk_t *> (malloc (sizeof (chunk_t)));
+
+#if defined(HAVE_POSIX_MEMALIGN) || defined(_POSIX_VERSION) || defined(__GLIBC__) || defined(__linux__) || defined(__APPLE__)
+        void *pv = NULL;
+        if (posix_memalign (&pv, alignment, sizeof (chunk_t)) == 0)
+            return static_cast<chunk_t *> (pv);
         return NULL;
 #else
-        return static_cast<chunk_t *> (malloc (sizeof (chunk_t)));
+        // Best-effort fallback: if we cannot guarantee the required alignment
+        // on this platform, return NULL and let alloc_assert trigger.
+        return NULL;
+#endif
 #endif
     }
 
