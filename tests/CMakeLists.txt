@@ -288,6 +288,11 @@ endforeach()
 # override timeout for these tests
 if(ZMQ_HAVE_CURVE AND TARGET test_security_curve)
   set_tests_properties(test_security_curve PROPERTIES TIMEOUT 60)
+  # For Visual Studio (multi-config generator), exclude from Release builds
+  if(WIN32)
+    set_tests_properties(test_security_curve PROPERTIES
+      EXCLUDE_FROM_ALL $<CONFIG:Release>)
+  endif()
 endif()
 set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 90)
 
