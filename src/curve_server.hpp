@@ -26,10 +26,10 @@ class curve_server_t ZMQ_FINAL : public zap_client_common_handshake_t,
     ~curve_server_t ();
 
     // mechanism implementation
-    int next_handshake_command (msg_t *msg_);
-    int process_handshake_command (msg_t *msg_);
-    int encode (msg_t *msg_);
-    int decode (msg_t *msg_);
+    int next_handshake_command (msg_t *msg_) override;
+    int process_handshake_command (msg_t *msg_) override;
+    int encode (msg_t *msg_) override;
+    int decode (msg_t *msg_) override;
 
   private:
     //  Our secret key (s)

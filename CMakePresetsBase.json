@@ -6,6 +6,8 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/_bld-${presetName}",
       "cacheVariables": {
+        "ENABLE_CURVE": "ON",
+        "WITH_LIBSODIUM": "ON",
         "WITH_TLS": "OFF",
         "BUILD_SHARED": "OFF",
         "ENABLE_CPACK": "OFF",
