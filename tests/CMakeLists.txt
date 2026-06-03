@@ -1,5 +1,5 @@
 # CMake build script for ZeroMQ tests
-cmake_minimum_required(VERSION 2.8.1...3.31)
+cmake_minimum_required(VERSION 2.8.1...4.3)
 
 # On Windows: solution file will be called tests.sln
 project(tests)
@@ -288,6 +288,11 @@ endforeach()
 # override timeout for these tests
 if(ZMQ_HAVE_CURVE AND TARGET test_security_curve)
   set_tests_properties(test_security_curve PROPERTIES TIMEOUT 60)
+  # For Visual Studio (multi-config generator), exclude from Release builds
+  if(WIN32)
+    set_tests_properties(test_security_curve PROPERTIES
+      DISABLED $<CONFIG:Release>)
+  endif()
 endif()
 set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 90)
 

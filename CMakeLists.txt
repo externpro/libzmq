@@ -1,6 +1,5 @@
 # CMake build script for ZeroMQ
-cmake_minimum_required(VERSION 3.0.2...3.31)
-set(CMAKE_PROJECT_TOP_LEVEL_INCLUDES .devcontainer/cmake/xproinc.cmake)
+cmake_minimum_required(VERSION 3.0.2...4.3)
 project(ZeroMQ)
 
 include(CheckIncludeFiles)
@@ -261,14 +260,14 @@ if(ENABLE_CURVE)
     if(COMMAND xpFindPkg)
       xpFindPkg(PKGS libsodium)
       message(STATUS "Using libsodium for CURVE security")
-      get_target_property(SODIUM_INCLUDE_DIRS xpro::sodium INTERFACE_INCLUDE_DIRECTORIES)
-      get_target_property(SODIUM_DEFS xpro::sodium INTERFACE_COMPILE_DEFINITIONS)
+      get_target_property(SODIUM_INCLUDE_DIRS libsodium::sodium INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(SODIUM_DEFS libsodium::sodium INTERFACE_COMPILE_DEFINITIONS)
       include_directories(${SODIUM_INCLUDE_DIRS})
       add_compile_definitions(${SODIUM_DEFS})
       set(ZMQ_USE_LIBSODIUM 1)
       set(ZMQ_HAVE_CURVE 1)
       set(SODIUM_FOUND TRUE)
-      set(SODIUM_LIBRARIES ${LIBSODIUM_LIBRARIES})
+      set(SODIUM_LIBRARIES libsodium::sodium)
     else()
     find_package("Sodium")
     if(SODIUM_FOUND)
@@ -1233,21 +1232,7 @@ set(VERSION ${ZMQ_VERSION_MAJOR}.${ZMQ_VERSION_MINOR}.${ZMQ_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/libzmq.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc @ONLY)
 set(zmq-pkgconfig ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc)
 
-set(targetsFile ${PROJECT_NAME}Targets)
-if(DEFINED XP_NAMESPACE)
-  xpExternPackage(REPO_NAME libzmq NAMESPACE ${XP_NAMESPACE}
-    TARGETS_FILE ${targetsFile} LIBRARIES libzmq-static
-    BASE v${VERSION} XPDIFF "patch" DEPS libsodium
-    WEB "https://zeromq.org/" UPSTREAM "github.com/zeromq/libzmq"
-    DESC "high-performance asynchronous messaging library"
-    LICENSE "[MPL-2.0](http://wiki.zeromq.org/area:licensing 'Mozilla Public License 2.0')"
-    )
-  set(nSpace ${XP_NAMESPACE}::)
-  set(nameSpace NAMESPACE ${nSpace})
-  set(ZEROMQ_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_CMAKEDIR} CACHE STRING "install path for ZeroMQConfig.cmake")
-endif()
-
-if(NOT ZMQ_BUILD_FRAMEWORK AND NOT DEFINED XP_NAMESPACE)
+if(NOT ZMQ_BUILD_FRAMEWORK AND NOT COMMAND xpExternPackage)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
@@ -1632,6 +1617,22 @@ endif()
 
 # -----------------------------------------------------------------------------
 # installer
+
+set(targetsFile ${PROJECT_NAME}Targets)
+if(COMMAND xpExternPackage)
+  xpExternPackage(REPO_NAME libzmq
+    TARGETS_FILE ${targetsFile} EXPORT ${PROJECT_NAME}-targets
+    CREATE_ALIASES PKG_CMAKE_USEXT
+    LIBRARIES libzmq-static DEFAULT_TARGETS libzmq-static
+    BASE v${VERSION} XPDIFF "patch"
+    WEB "https://zeromq.org/" UPSTREAM "github.com/zeromq/libzmq"
+    DESC "high-performance asynchronous messaging library"
+    LICENSE "[MPL-2.0](http://wiki.zeromq.org/area:licensing 'Mozilla Public License 2.0')"
+    )
+  set(nSpace libzmq::)
+  set(nameSpace NAMESPACE ${nSpace})
+  set(ZEROMQ_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_CMAKEDIR} CACHE STRING "install path for ZeroMQConfig.cmake")
+endif()
 
 if(MSVC AND (BUILD_SHARED OR BUILD_STATIC))
   install(
