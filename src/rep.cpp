@@ -5,8 +5,8 @@
 #include "err.hpp"
 #include "msg.hpp"
 
-zmq::rep_t::rep_t (class ctx_t *parent_, uint32_t tid_, int sid_) :
-    router_t (parent_, tid_, sid_),
+zmq::rep_t::rep_t (class ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_) :
+    router_t (parent_, tid_, sid_, cnfn_, cnfnhint_),
     _sending_reply (false),
     _request_begins (true)
 {

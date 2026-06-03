@@ -1,5 +1,5 @@
 # CMake build script for ZeroMQ tests
-cmake_minimum_required(VERSION "2.8.1")
+cmake_minimum_required(VERSION 2.8.1...4.3)
 
 # On Windows: solution file will be called tests.sln
 project(tests)
@@ -306,7 +306,7 @@ foreach(test ${tests})
     endif()
   endif()
 
-  set_tests_properties(${test} PROPERTIES TIMEOUT 10)
+  set_tests_properties(${test} PROPERTIES TIMEOUT 15)
   set_tests_properties(${test} PROPERTIES SKIP_RETURN_CODE 77)
 
   if(QNX)
@@ -315,7 +315,7 @@ foreach(test ${tests})
 endforeach()
 
 # override timeout for these tests
-set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
+set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 90)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)

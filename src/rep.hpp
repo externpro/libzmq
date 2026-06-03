@@ -15,7 +15,7 @@ class socket_base_t;
 class rep_t ZMQ_FINAL : public router_t
 {
   public:
-    rep_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);
+    rep_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_);
     ~rep_t ();
 
     //  Overrides of functions from socket_base_t.

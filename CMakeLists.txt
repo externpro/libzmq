@@ -1,11 +1,6 @@
 # CMake build script for ZeroMQ
+cmake_minimum_required(VERSION 3.0.2...4.3)
 project(ZeroMQ)
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
-  cmake_minimum_required(VERSION 3.0.2)
-else()
-  cmake_minimum_required(VERSION 2.8.12)
-endif()
 
 include(CheckIncludeFiles)
 include(CheckCCompilerFlag)
@@ -265,6 +260,18 @@ option(ENABLE_CURVE "Enable CURVE security" OFF)
 
 if(ENABLE_CURVE)
   if(WITH_LIBSODIUM)
+    if(COMMAND xpFindPkg)
+      xpFindPkg(PKGS libsodium)
+      message(STATUS "Using libsodium for CURVE security")
+      get_target_property(SODIUM_INCLUDE_DIRS libsodium::sodium INTERFACE_INCLUDE_DIRECTORIES)
+      get_target_property(SODIUM_DEFS libsodium::sodium INTERFACE_COMPILE_DEFINITIONS)
+      include_directories(${SODIUM_INCLUDE_DIRS})
+      add_compile_definitions(${SODIUM_DEFS})
+      set(ZMQ_USE_LIBSODIUM 1)
+      set(ZMQ_HAVE_CURVE 1)
+      set(SODIUM_FOUND TRUE)
+      set(SODIUM_LIBRARIES libsodium::sodium)
+    else()
     find_package("sodium")
     if(SODIUM_FOUND)
       message(STATUS "Using libsodium for CURVE security")
@@ -283,6 +290,7 @@ if(ENABLE_CURVE)
         ERROR
           "libsodium not installed, you may want to install libsodium and run cmake again"
       )
+    endif()
     endif()
   endif()
 else()
@@ -1235,7 +1243,7 @@ set(VERSION ${ZMQ_VERSION_MAJOR}.${ZMQ_VERSION_MINOR}.${ZMQ_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/libzmq.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc @ONLY)
 set(zmq-pkgconfig ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc)
 
-if(NOT ZMQ_BUILD_FRAMEWORK)
+if(NOT ZMQ_BUILD_FRAMEWORK AND NOT COMMAND xpExternPackage)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libzmq.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
@@ -1459,7 +1467,8 @@ endif()
 foreach(target ${build_targets})
   target_include_directories(
     ${target} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:include>)
+                     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
   if(ENABLE_DRAFTS)
     target_compile_definitions(${target} PUBLIC ZMQ_BUILD_DRAFT_API)
@@ -1623,7 +1632,7 @@ if(BUILD_SHARED)
           VERBATIM
           COMMENT "Perf tools")
       else()
-        install(TARGETS ${perf-tool} RUNTIME DESTINATION bin COMPONENT PerfTools)
+        install(TARGETS ${perf-tool} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT PerfTools)
       endif()
       if(ZMQ_HAVE_WINDOWS_UWP)
         set_target_properties(${perf-tool} PROPERTIES LINK_FLAGS_DEBUG "/OPT:NOICF /OPT:NOREF")
@@ -1669,6 +1678,22 @@ endif()
 # -----------------------------------------------------------------------------
 # installer
 
+set(targetsFile ${PROJECT_NAME}Targets)
+if(COMMAND xpExternPackage)
+  xpExternPackage(REPO_NAME libzmq
+    TARGETS_FILE ${targetsFile} EXPORT ${PROJECT_NAME}-targets
+    CREATE_ALIASES PKG_CMAKE_USEXT
+    LIBRARIES libzmq-static DEFAULT_TARGETS libzmq-static
+    BASE v${VERSION} XPDIFF "patch"
+    WEB "https://zeromq.org/" UPSTREAM "github.com/zeromq/libzmq"
+    DESC "high-performance asynchronous messaging library"
+    LICENSE "[MPL-2.0](http://wiki.zeromq.org/area:licensing 'Mozilla Public License 2.0')"
+    )
+  set(nSpace libzmq::)
+  set(nameSpace NAMESPACE ${nSpace})
+  set(ZEROMQ_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_CMAKEDIR} CACHE STRING "install path for ZeroMQConfig.cmake")
+endif()
+
 if(MSVC AND (BUILD_SHARED OR BUILD_STATIC))
   install(
     TARGETS ${target_outputs}
@@ -1711,7 +1736,7 @@ foreach(readme ${readme-docs})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${readme} ${CMAKE_CURRENT_BINARY_DIR}/${readme}.txt)
 
   if(NOT ZMQ_BUILD_FRAMEWORK)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${readme}.txt DESTINATION share/zmq)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${readme}.txt DESTINATION ${CMAKE_INSTALL_DOCDIR})
   endif()
 endforeach()
 
@@ -1719,7 +1744,7 @@ if(WITH_DOC)
   if(NOT ZMQ_BUILD_FRAMEWORK)
     install(
       FILES ${html-docs}
-      DESTINATION doc/zmq
+      DESTINATION ${CMAKE_INSTALL_DOCDIR}
       COMPONENT RefGuide)
   endif()
 endif()
@@ -1737,7 +1762,7 @@ else()
 endif()
 
 if((NOT CMAKE_VERSION VERSION_LESS 3.0) AND (BUILD_SHARED OR BUILD_STATIC))
-  export(EXPORT ${PROJECT_NAME}-targets FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake")
+  export(EXPORT ${PROJECT_NAME}-targets FILE "${CMAKE_CURRENT_BINARY_DIR}/${targetsFile}.cmake")
 endif()
 configure_package_config_file(
   builds/cmake/${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
@@ -1749,7 +1774,7 @@ write_basic_package_version_file(
 if(BUILD_SHARED OR BUILD_STATIC)
   install(
     EXPORT ${PROJECT_NAME}-targets
-    FILE ${PROJECT_NAME}Targets.cmake
+    FILE ${targetsFile}.cmake ${nameSpace}
     DESTINATION ${ZEROMQ_CMAKECONFIG_INSTALL_DIR})
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
                 ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake

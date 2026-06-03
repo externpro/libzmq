@@ -238,6 +238,17 @@ void *zmq_socket (void *ctx_, int type_)
     return static_cast<void *> (s);
 }
 
+void *zmq_new_router_socket (void * ctx_, zmq_router_skt_peer_connect_notification_fn *cnfn_, void *cnfnhint_)
+{
+    if (!ctx_ || !(static_cast<zmq::ctx_t *> (ctx_))->check_tag ()) {
+        errno = EFAULT;
+        return NULL;
+    }
+    zmq::ctx_t *ctx = static_cast<zmq::ctx_t *> (ctx_);
+    zmq::socket_base_t *s = ctx->create_router_socket (cnfn_, cnfnhint_);
+    return static_cast<void *> (s);
+}
+
 int zmq_close (void *s_)
 {
     zmq::socket_base_t *s = as_socket_base_t (s_);

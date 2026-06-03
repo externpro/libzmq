@@ -126,3 +126,8 @@ zeromq-*.zip
 core
 
 mybuild
+
+# externpro
+.env
+_bld*/
+docker-compose.override.yml
