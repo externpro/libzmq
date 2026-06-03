@@ -51,7 +51,7 @@ void test_z85_decode_fuzzer ()
     free (len);
 }
 
-int main (int argc, char **argv)
+int main (int /*argc*/, char ** /*argv*/)
 {
     setup_test_environment ();
 
