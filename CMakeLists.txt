@@ -1682,7 +1682,6 @@ set(targetsFile ${PROJECT_NAME}Targets)
 if(COMMAND xpExternPackage)
   xpExternPackage(REPO_NAME libzmq
     TARGETS_FILE ${targetsFile} EXPORT ${PROJECT_NAME}-targets
-    CREATE_ALIASES PKG_CMAKE_USEXT
     LIBRARIES libzmq-static DEFAULT_TARGETS libzmq-static
     BASE v${VERSION} XPDIFF "patch"
     WEB "https://zeromq.org/" UPSTREAM "github.com/zeromq/libzmq"
